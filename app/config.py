@@ -41,5 +41,5 @@ LANGUAGES = {
 }
 
 
-BAIDU_APP_ID = '20170921000084417'
-BAIDU_APP_KEY = '9ZlBKtiexIS5OObTp3GH'
+BAIDU_APP_ID = 'your-baidu-id'
+BAIDU_APP_KEY = 'your-baidu-key'
