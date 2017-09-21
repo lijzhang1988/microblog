@@ -4,6 +4,8 @@ from app import Im
 from app.models.models import Users
 from app.views.forms import LoginForm
 from app.controller.usercontroller import UserController
+from flask_babel import gettext
+
 
 
 @Im.user_loader

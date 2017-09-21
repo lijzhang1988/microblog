@@ -4,14 +4,30 @@ from flask_login import LoginManager
 import logging
 from logging.handlers import SMTPHandler
 from logging.handlers import RotatingFileHandler
+from flask_mail import Mail
+from app.utils.momentjs import Momentjs
+from flask_babel import Babel,lazy_gettext
+
 
 app = Flask(__name__)
 app.config.from_object(config)
 
+
+mail = Mail(app)
+babel = Babel(app)
+
+
 Im = LoginManager()
+Im.login_message = lazy_gettext('Please log in to access this page.')
 Im.session_protection = 'strong'
 Im.login_view = 'auth.login'
 Im.init_app(app)
+
+
+#use Momentjs
+app.jinja_env.globals['momentjs'] = Momentjs
+
+
 
 
 from app.views import microblogviews

@@ -1,18 +1,49 @@
 from app import app
 from flask import render_template
 from flask import flash
+from flask import request
 from flask import g
 from flask import redirect
 from werkzeug.utils import secure_filename
 from flask_login import login_required,current_user
 from app.controller.usercontroller import UserController
+from app.controller.full_text_search import query as search_by_text
 from flask import url_for
 from datetime import datetime
-from app.views.forms import LoginForm,EditForm,NewUserForm
+from app.views.forms import LoginForm,EditForm,NewUserForm,PostForm,SearchForm
 from os.path import join
 from os import remove
 from app.models import session
 from flask_login import login_user
+from app.controller.emails import follower_notification
+from app import babel
+from app.config import LANGUAGES
+from flask_babel import gettext as _
+from app.controller.translate import translate
+from flask import jsonify
+
+#res = translate('today is a beautiful day!', 'zh')
+#print(res)
+
+@app.route('/translate',methods=['POST'])
+@login_required
+def translate_action():
+    return jsonify({
+        'text':translate(
+            request.form['text'],
+            request.form['destLang']
+        )
+    })
+
+    res = translate('today is a beautiful day!', 'zh')
+    print(res)
+
+
+@babel.localeselector
+def get_locale():
+    language = request.accept_languages.best_match(app.config['LANGUAGES'].keys())
+    g.locale = 'zh'
+    return 'zh'
 
 
 
@@ -31,16 +62,37 @@ def internal_error(error):
 
 
 
-@app.route('/')
+@app.route('/',methods=['get','post'])
+@app.route('/index',methods=['get','post'])
+@app.route('/index/<int:page>',methods=['get','post'])
 @login_required
-def index():
-    '''
+def index(page=1):
     user = current_user
-    template_naeme = 'index.html'
-    return render_template(template_naeme,title='Home',user=user)
+    form = PostForm()
 
-    '''
-    return redirect('/posts')
+    if form.validate_on_submit():
+        post_body = form.post.data
+        user_id = user.id
+        nickname = user.nickname
+        userController = UserController()
+        userController.addpost(user_id=user_id,nickname=nickname,post_body=post_body)
+        return redirect(url_for('index'))
+#get posts
+    followed_posts_results = current_user.followed_posts(page=page)
+    posts = followed_posts_results['posts']
+    has_pre_page = followed_posts_results['has_pre_page']
+    pre_page_num = followed_posts_results['pre_page_num']
+    has_next_page = followed_posts_results['has_next_page']
+    next_page_num = followed_posts_results['next_page_num']
+
+
+    template_naeme = 'posts.html'
+
+    return render_template(template_naeme, title='Posts', posts=posts,
+                           user=user,form=form,has_next_page=has_next_page,
+                           next_page_num=next_page_num,has_pre_page=has_pre_page,
+                           pre_page_num=pre_page_num)
+
 
 @app.route('/hello')
 def hello():
@@ -65,7 +117,7 @@ def html():
 def posts():
 
     user = current_user
-
+    print('posts funcation')
     posts = [{'author': {'nickname': 'John'}, 'body': 'Beautiful day in Portland!'},
              {'author': {'nickname': 'Susan'}, 'body': 'The Avengers movie was so cool!'}]
 
@@ -95,33 +147,74 @@ def dologin():
         template_naeme = 'login.html'
         return render_template(template_naeme,title='Sign In',form=form)
 
+
+
 @app.route('/user/<username>')
+@app.route('/user/<username>/<int:page>')
 @login_required
-def user(username):
+def user(username,page=1):
     userController = UserController()
     user = userController.query_byname(username=username)
 
     if user == None:
         flash('User ' + username + ' not found.')
         return redirect('/')
+    #getposts
+    followed_posts_results = current_user.followed_posts(page=page)
+    posts = followed_posts_results['posts']
+    has_pre_page = followed_posts_results['has_pre_page']
+    pre_page_num = followed_posts_results['pre_page_num']
+    has_next_page = followed_posts_results['has_next_page']
+    next_page_num = followed_posts_results['next_page_num']
 
-    posts = [{'author':user,'body':'Test post #1'},{'author':user,'body':'Test post #2'}]
 
-    return render_template('user.html',
-                           user = user,
-                           posts = posts)
+    template_naeme = 'user.html'
+
+    return render_template(template_naeme, title='Posts', posts=posts,
+                           user=user, has_next_page=has_next_page,
+                           next_page_num=next_page_num, has_pre_page=has_pre_page,
+                           pre_page_num=pre_page_num)
 
 
 
 @app.before_request
 def before_request():
-    current_user
     if current_user.is_authenticated:
         current_user.last_seen=datetime.utcnow()
         userController = UserController()
         userController.update(current_user)
+        g.search_form = SearchForm()
+
+    #g.locale = get_locale()
 
 
+@app.route('/search',methods=['POST'])
+@login_required
+def search():
+    form = SearchForm()
+    if form.validate_on_submit():
+        return redirect(url_for('search_results',query=form.search.data))
+    else:
+        return redirect(url_for('index'))
+
+@app.route('/search_results/<query>')
+@login_required
+def search_results(query):
+    results = search_by_text(query)
+    post_ids = []
+    print('first')
+    for item in results:
+        post_ids.append(item['post_id'])
+
+    if len(post_ids) == 0:
+        print('good')
+        return redirect(url_for('index'))
+    else:
+        print('tow')
+        userController = UserController()
+        posts = userController.search_posts(post_ids=post_ids)
+        template_name = 'search_results.html'
+        return render_template(template_name,title='Search Results',posts=posts,query=query)
 
 @app.route('/edit',methods=['GET','POST'])
 @login_required
@@ -165,7 +258,7 @@ def newuser():
         userController = UserController()
         user = userController.query_byname(username)
         if user:
-            flash('The username is signned up, please another username!')
+            flash(_('The username is signned up, please another username!'))
             render_template('newuser.html',title='Sign Up',form=form)
         else:
             password = form.password.data
@@ -177,3 +270,68 @@ def newuser():
 
 
     return render_template('newuser.html',title='Sign Up',form=form)
+
+
+
+@app.route('/follow/<username>')
+@login_required
+def follow(username):
+    userController = UserController()
+    user = userController.query_byname(username)
+    if user is None:
+        flash('User%s not found.' % username)
+        return redirect(url_for('index'))
+
+    if user == current_user:
+        flash('You can\'t follow yourself!')
+        return redirect(url_for('user',username=username))
+    u = current_user.follow(user)
+
+
+    if u is None:
+        flash('Can not follow' + username + '.')
+        return redirect(url_for('user',username=username))
+    flash('You are now following' + username +'.')
+    follower_notification(user,current_user)
+
+
+    return redirect(url_for('user',username=username))
+
+
+@app.route('/unfollow/<username>')
+@login_required
+def unfollow(username):
+    userController = UserController()
+    user = userController.query_byname(username)
+    if user is None:
+        flash('User %s not found.' % username)
+        return redirect(url_for('index'))
+    if user == current_user:
+        flash('You can\'t unfollow yourself!')
+        return redirect('user',username=username)
+    u = current_user.unfollow(user)
+    if u is None:
+        flash('Cannot unfollow ' + username + '.')
+        return redirect(url_for('user',username=username))
+    flash('You have stopped following ' + username + '.')
+    return redirect(url_for('user',username=username))
+
+
+@app.route('/delete/<int:id>')
+@login_required
+def delete(id):
+    userController = UserController()
+    post = userController.search_post_byid(id=id)
+    if post == None:
+        flash('Post not found.')
+        return redirect(url_for('index'))
+    if post.author.id != current_user.id:
+        flash('You cannt delete this post.')
+        return redirect(url_for('index'))
+
+    #delete post
+    userController.delete_post(post)
+    flash('your post has been deleted.')
+
+
+    return redirect(url_for('index'))

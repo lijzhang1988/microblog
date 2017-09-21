@@ -1,7 +1,24 @@
-<tr>
-    <td><img src="{{ user.get_imgpath() }}" style="display: flex" width="50" height="50" </td>
-    <td><p>
-        {{ post.author.nickname }}says:<b>{{ post.body }}</b>
-    </p>
+<table>
+   {% for post in posts %}
+   <tr>
+    <td><img src="{{ post.author.get_imgpath() }}" style="display: flex" width="50" height="50"> </td>
+    <td>
+        <div>
+            {{ post.author.nickname }} said {{ momentjs(post.timestamp).fromNow() }}:
+            <b><span id="post{{ post.id }}">{{ post.body }}</span></b>
+            {% if post.author.id == current_user.id %}
+                  <div><a href="{{ url_for('delete',id=post.id) }}">{{ _('Delete') }}</a></div>
+            {% endif %}
+        </div>
+
+        <div>
+            <span id="translation{{ post.id }}">
+                <a href="javascript:translate('{{ g.locale }}', '#post{{ post.id }}', '#translation{{ post.id }}');">
+                    {{ _('Translate') }}
+                </a>
+            </span>
+        </div>
     </td>
 </tr>
+    {% endfor %}
+</table>

@@ -1,5 +1,7 @@
-from app.models.models import Users
+from app.models.models import Users,Posts
 from app.models import  session
+from datetime import datetime
+from app.controller.full_text_search import create_index
 
 class UserController:
     def query(self,username,password):
@@ -32,4 +34,35 @@ class UserController:
 
         session.add(user)
         session.commit()
+
+    #
+        user.follow(user)
+        session.add(user)
+        session.commit()
         return user
+
+
+    def addpost(self,user_id,nickname,post_body):
+        post = Posts()
+        post.user_id = user_id
+        post.body = post_body
+        post.timestamp = datetime.utcnow()
+        session.add(post)
+        session.commit()
+
+        #create all file index
+        create_index(user_id=user_id,post_id=post.id,nickname=nickname,post_body=post_body)
+        return post
+
+    #Post search
+    def search_posts(self,post_ids):
+        posts = session.query(Posts).filter(Posts.id.in_(other=post_ids)).order_by(Posts.timestamp.desc()).all()
+        return posts
+
+    def search_post_byid(self,id):
+        post = session.query(Posts).filter_by(id=id).first()
+        return post
+
+    def delete_post(self,post):
+        session.delete(post)
+        session.commit()

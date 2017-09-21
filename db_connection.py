@@ -1,7 +1,8 @@
-from app.models.models import Users
+from app.models.models import Users,Posts
 from app.models import session
 
 user = Users()
+post = Posts()
 #user.username = 'lijzhang'
 #user.password = 'zaq12wsx'
 #user.nickname = 'ZLJ'
@@ -19,8 +20,13 @@ user = Users()
 #session.close()
 
 
-users = session.query(Users).all()
+users = session.query(Users.id,Users.username,Users.password,Users.nickname,Users.email,Users.imgpath,Users.last_seen).all()
 print(users)
+
+
+#posts = session.query(Posts.id,Posts.body,Posts.timestamp,Posts.user_id).all()
+#print(posts)
+
 
 #user = session.query(Users).get(1)
 #print(user)
@@ -41,3 +47,11 @@ print(users)
 
 #users = session.query(Users).all()
 #print(users)
+
+
+#delete all posts
+posts = session.query(Posts).all()
+for post in posts:
+    session.delete(post)
+    session.commit()
+    session.close()

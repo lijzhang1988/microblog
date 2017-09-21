@@ -7,8 +7,17 @@
         <td>
             <h1>User:{{ user.nickname }}</h1>
             {% if user.description %}<p>{{ user.description }}</p>{% endif %}
-            {% if user.last_seen %}<p><i>Last seen on:{{ user.last_seen }}</i></p>{% endif %}
-            {% if user.id == current_user.id %}<p><a href="{{ url_for('edit') }}">Edit</a>
+            {% if user.last_seen %}<p><i>Last seen on:{{ momentjs(user.last_seen).calendar() }}</i></p>{% endif %}
+            <p>{{ user.followers.count() }}  followers  |
+               {% if user.id == current_user.id %}
+                     <a href="{{ url_for('edit') }}">Edit your profile</a>
+               {% elif not current_user.is_following(user) %}
+                     <a href="{{ url_for('follow',username=user.username) }}">Follow</a>
+               {% else %}
+                     <a href="{{ url_for('unfollow',username=user.username) }}">Unfollow</a>
+               {% endif %}
+            </p>
+           <!-- {% if user.id == current_user.id %}<p><a href="{{ url_for('edit') }}">Edit</a> -->
         </p>{% endif %}
         </td>
     </tr>
@@ -16,11 +25,16 @@
     <hr>
     <hr>
     {% if posts %}
-    <table>
-    {% for post in posts %}
        {% include 'post_tmp.html' %}
-    {% endfor %}
-    </table>
 
+       {% if has_pre_page %}
+           <a href="{{ url_for('user',username=user.username,page=pre_page_num) }}"><< Newer posts</a>
+       {% else %}
+           << Newer posts
+       {% endif %}   |
+       {% if has_next_page %}
+           <a href="{{ url_for('user',username=user.username,page=next_page_num) }}">Older posts >></a>
+       {% else %}Older posts >>
+       {% endif %}
     {% endif %}
 {% endblock %}

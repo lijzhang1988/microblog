@@ -1,0 +1,43 @@
+# Translations template for PROJECT.
+# Copyright (C) 2017 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2017.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2017-09-21 17:43+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.4.0\n"
+
+#: __init__.py:21
+msgid "Please log in to access this page."
+msgstr ""
+
+#: templates/base.html:20
+msgid "Error: Could not contact server."
+msgstr ""
+
+#: templates/base.html:34
+msgid "Home"
+msgstr ""
+
+#: templates/post_tmp.html:10
+msgid "Delete"
+msgstr ""
+
+#: templates/post_tmp.html:17
+msgid "Translate"
+msgstr ""
+
+#: views/microblogviews.py:261
+msgid "The username is signned up, please another username!"
+msgstr ""
+

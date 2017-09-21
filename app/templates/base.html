@@ -1,5 +1,28 @@
 <html>
   <head>
+      <link href="/static/css/bootstrap.min.css" rel="stylesheet" media="screen">
+      <link href="/static/css/bootstrap-responsive.min.css" rel="stylesheet">
+      <script src="http://code.jquery.com/jquery-latest.js"></script>
+      <script src="/static/js/bootstrap.min.js"></script>
+      <script src="/static/js/moment-with-locales.js"></script>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+      <script>
+          function translate(destLang, sourceId, destId) {
+              $(destId).hide();
+              $.post('/translate', {
+                  text: $(sourceId).text(),
+                  destLang: destLang
+              }).done(function (translated) {
+                  $(destId).text(translated['text'])
+                  $(destId).show();
+              }).fail(function () {
+                  $(destId).test("{{ _('Error: Could not contact server.') }}");
+                  $(destId).show();
+              });
+          }
+      </script>
+
       {% if title %}
       <title>{{ title }} -microblog</title>
       {% else %}
@@ -8,10 +31,15 @@
   </head>
  <body>
     <div>
-        Microblog:<a href="/">Home</a>
+        Microblog:<a href="/">{{ _('Home') }}</a>
         {% if current_user.is_authenticated %}
-            <a href="{{ url_for('user',username=current_user.username) }}">Your Profile</a>
-            <a href="/auth/logout">Logout</a>
+            | <a href="{{ url_for('user',username=current_user.username) }}">Your Profile</a>
+            |
+            <form style="display: inline;" action="{{ url_for('search') }}" method="post" name="search">
+               {{ g.search_form.csrf_token }}{{ g.search_form.search(size=20) }}<input type="submit" value="Search">
+            </form>
+
+            |<a href="/auth/logout">Logout</a>
         {% endif %}
         {% if not current_user.is_authenticated %}
             <a href="{{ url_for('newuser') }}">Sign Up</a>
